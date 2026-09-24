@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "DAQ")(type "KiCad")(uri "${KIPRJMOD}/DAQ.kicad_sym")(options "")(descr "MIE1001 Team 5 DAQ shield symbols"))
+)

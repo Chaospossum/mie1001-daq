@@ -1,0 +1,23 @@
+Qty,References,Value,Footprint,Manufacturer,MPN,Digi-Key P/N,LCSC,Note
+1,A1,Arduino UNO R3,Module:Arduino_UNO_R3,Arduino,A000066,1050-1024-ND,,
+1,C1,10pF C0G 50V 0603,Capacitor_SMD:C_0603_1608Metric,Murata,GRM1885C1H100JA01D,490-1403-1-ND,C1634,"MUST be fitted. TIA stability needs Cf >= sqrt(Cin/(2*pi*Rf*GBW)); with ~100 pF of cable, Rf = 2M2 and the LMP7721's 17 MHz GBW that is ~0.65 pF, so 10 pF has wide margin (sets a 7.2 kHz / 159 Hz pole)."
+3,"C2, C9, C10",1uF X5R 50V 0603,Capacitor_SMD:C_0603_1608Metric,Samsung,CL10A105KB8NNNC,1276-1860-1-ND,C15849,Any 1 uF >=16 V X5R/X7R 0603 works; confirm JLCPCB stock of C15849 when ordering.
+2,"C3, C7",10uF X5R 25V 0805,Capacitor_SMD:C_0805_2012Metric,Samsung,CL21A106KAYNNNE,1276-2891-1-ND,C15850,
+4,"C4, C5, C6, C8",100nF X7R 50V 0603,Capacitor_SMD:C_0603_1608Metric,Samsung,CL10B104KB8NNNC,1276-1000-1-ND,C14663,
+1,D1,BAV199LT1G,Package_TO_SOT_SMD:SOT-23,onsemi,BAV199LT1G,BAV199LT1GOSCT-ND,C145516,"Tied to VREF, not the rails: 0 V bias means near-zero leakage into the pA node (20-50 pA per diode at 2.5 V reverse)."
+1,J1,"Detector in, BNC",Connector_Coaxial:BNC_Amphenol_031-6575_Horizontal,Amphenol RF,031-6575,ARF2111-ND,,
+1,J2,QPS mass cmd out,"TerminalBlock_Phoenix:TerminalBlock_Phoenix_PT-1,5-2-3.5-H_1x02_P3.50mm_Horizontal",Phoenix Contact,1984617,277-1721-ND,,
+1,J3,VREF / AIN3 / GND,Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical,Sullins,PRPC040SAAN-RC,S1011EC-40-ND,,
+1,J4,Trigger in,"TerminalBlock_Phoenix:TerminalBlock_Phoenix_PT-1,5-2-3.5-H_1x02_P3.50mm_Horizontal",Phoenix Contact,1984617,277-1721-ND,,
+1,JP1,TIA range select,Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical,Sullins,PRPC040SAAN-RC,S1011EC-40-ND,,
+1,R1,2M2 1% 0603,Resistor_SMD:R_0603_1608Metric,Yageo,RC0603FR-072M2L,YAG3329CT-ND,C22938,
+1,R2,100M 1% 1206,Resistor_SMD:R_1206_3216Metric,Stackpole,HVCB1206FKC100M,HVCB1206FKC100MCT-ND,C59781,"High-value TIA feedback: guard the pads, keep them clean, no flux residue. JLC/LCSC has no HVCB stock: use Uniroyal 1206W4F1006T5E (C59781), 1% +-100 ppm/C."
+6,"R3, R4, R9, R13, R16, R17",1k 1% 0603,Resistor_SMD:R_0603_1608Metric,Yageo,RC0603FR-071KL,311-1.00KHRCT-ND,C21190,Protects the LMP7721 IN+ from transients on VREF; carries only fA.
+2,"R5, R6",4k7 1% 0603,Resistor_SMD:R_0603_1608Metric,Yageo,RC0603FR-074K7L,311-4.70KHRCT-ND,C23162,
+4,"R7, R8, R10, R11",10k 1% 0603,Resistor_SMD:R_0603_1608Metric,Yageo,RC0603FR-0710KL,311-10.0KHRCT-ND,C25804,ALERT/RDY is open-drain - this pull-up is required
+2,"R12, R15",100R 1% 0603,Resistor_SMD:R_0603_1608Metric,Yageo,RC0603FR-07100RL,311-100HRCT-ND,C22775,Isolation resistor: MCP6002 driving >100 pF of cable needs Riso (DS20001733L section 4.3). Isolation resistor so the MCP6002 VREF buffer can drive C9.
+1,R14,10k 1% 0603 anti-surge,Resistor_SMD:R_0603_1608Metric,Panasonic,ERJ-PA3F1002V,P10KBYCT-ND,,"Series protection at the BNC: anti-surge (pulse-rated, AEC-Q200) 0603, limits the current into D1. 10 uV drop per nA. HAND-SOLDER from the Digi-Key order (not in the JLC assembly files)."
+1,U1,MCP4725A0T-E/CH,Package_TO_SOT_SMD:SOT-23-6,Microchip,MCP4725A0T-E/CH,MCP4725A0T-E/CHCT-ND,C144198,
+1,U2,ADS1115IDGSR,Package_SO:MSOP-10_3x3mm_P0.5mm,Texas Instruments,ADS1115IDGSR,296-38849-1-ND,C37593,
+1,U3,MCP6002-I/SN,Package_SO:SOIC-8_3.9x4.9mm_P1.27mm,Microchip,MCP6002-I/SN,MCP6002-I/SN-ND,C116706,
+1,U4,LMP7721MA/NOPB,Package_SO:SOIC-8_3.9x4.9mm_P1.27mm,Texas Instruments,LMP7721MA/NOPB,LMP7721MA/NOPB-ND,C124427,"Electrometer TIA. Guard ring (VREF) on both layers around pins 1/8 and the feedback parts, no solder mask there. Clean flux off after soldering."
