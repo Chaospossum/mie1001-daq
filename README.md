@@ -1,4 +1,4 @@
-# MIE1001 Team 5 — data acquisition for the portable quadrupole mass spectrometer
+# MIE1001 Team 5&4 — data acquisition for the portable quadrupole mass spectrometer
 
 Foundation of Imaging Engineering (MIE1001), Maastricht University, 2026.
 Team 5 owns the data chain: detector signal → preamp → ADC → Arduino UNO → laptop, plus the DAC that
