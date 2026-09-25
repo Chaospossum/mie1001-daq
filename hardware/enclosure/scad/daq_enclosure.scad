@@ -93,7 +93,8 @@ qps_win     = [J2_pads[0][0] - 1.6, J2_crtyd[1] + 0.3, J2_crtyd[2] - 0.8, J2_crt
 j4_slot = [J4_pads[0][0] - 1.27 - 1.0, J4_pads[0][1] - 1.27 - 1.0,
            J4_pads[3][0] + 1.27 + 1.0, J4_pads[0][1] + 1.27 + 1.0];
 // Faraday cup coax
-faraday_mode = "passthrough";  // "passthrough": the SMA(m)->BNC(f) adapter goes up through the lid
+faraday_mode = "none";         // "none"       : plain box for the UNO + shield only, no Faraday-cup opening (current choice)
+                               // "passthrough": the SMA(m)->BNC(f) adapter goes up through the lid
                                // "bulkhead"   : BNC bulkhead jack in the lid + short SMA pigtail
 faraday_pass_d = 12.5;         // clears the adapter's BNC bayonet studs (11.6) and SMA nut (9.2)
 bnc_bulk_d = 9.7;  bnc_bulk_flat = 8.9;   // D-hole for a 3/8-32 BNC bulkhead jack [check its datasheet]
@@ -237,14 +238,14 @@ module lid() {
         box(qps_win[0], qps_win[1], z_ceil - 1, qps_win[2], qps_win[3], z_top + 1);
         box(j4_slot[0], j4_slot[1], z_ceil - 1, j4_slot[2], j4_slot[3], z_top + 1);
         // Faraday cup coax
-        translate([J5_pos[0], J5_pos[1], z_ceil - 1]) {
+        if (faraday_mode != "none") translate([J5_pos[0], J5_pos[1], z_ceil - 1]) {
             if (faraday_mode == "passthrough") cylinder(d = faraday_pass_d, h = lid_t + 2);
             else intersection() {
                 cylinder(d = bnc_bulk_d, h = lid_t + 2);
                 translate([-bnc_bulk_d / 2, -bnc_bulk_d / 2, 0]) cube([bnc_bulk_flat, bnc_bulk_d, lid_t + 2]);
             }
         }
-        for (dy = [-3.5, 3.5]) translate([J5_pos[0] + 9.3 - tie_slot[0] / 2, J5_pos[1] + dy - tie_slot[1] / 2, z_ceil - 1])
+        if (faraday_mode != "none") for (dy = [-3.5, 3.5]) translate([J5_pos[0] + 9.3 - tie_slot[0] / 2, J5_pos[1] + dy - tie_slot[1] / 2, z_ceil - 1])
             cube([tie_slot[0], tie_slot[1], lid_t + 2]);
         if (reset_button) translate([reset_pos[0], reset_pos[1], z_ceil - 1]) cylinder(d = reset_d, h = lid_t + 2);
         // outlet vents high in the front wall
@@ -260,8 +261,8 @@ module lid() {
         top_text("TRIG", sigtrig_win[2] + 2.6, (J3_crtyd[1] + J3_crtyd[3]) / 2, 2.6, 90);
         top_text("QPS OUT", (qps_win[0] + qps_win[2]) / 2 - 1.5, qps_win[3] + 2.4, 2.4);
         top_text("PRE A2 VREF GND", j4_slot[0] - 0.5, j4_slot[1] - 2.2, 2.3, 0, "left");
-        top_text("FARADAY CUP", J5_pos[0] - faraday_pass_d / 2 - 1.5, J5_pos[1] + 1.8, 3.0, 0, "right");
-        top_text(faraday_mode == "passthrough" ? "SMA > BNC" : "BNC", J5_pos[0] - faraday_pass_d / 2 - 1.5, J5_pos[1] - 2.6, 2.4, 0, "right");
+        if (faraday_mode != "none") top_text("FARADAY CUP", J5_pos[0] - faraday_pass_d / 2 - 1.5, J5_pos[1] + 1.8, 3.0, 0, "right");
+        if (faraday_mode != "none") top_text(faraday_mode == "passthrough" ? "SMA > BNC" : "BNC", J5_pos[0] - faraday_pass_d / 2 - 1.5, J5_pos[1] - 2.6, 2.4, 0, "right");
         if (reset_button) top_text("RESET", reset_pos[0], reset_pos[1] - reset_d / 2 - 2.6, 2.4);
         // copper-tape guide: 0.4 mm engraved outline on the underside of the lid top
         translate([0, 0, z_ceil - 0.01]) linear_extrude(0.41) difference() {
@@ -316,7 +317,7 @@ module stack() {
     // SMA jack + SMA(m) -> BNC(f) adapter
     color("gold") translate([J5_pos[0] - 3.2, J5_pos[1] - 3.2, shield_top]) cube([6.4, 6.4, 1.6]);
     color("gold") translate([J5_pos[0], J5_pos[1], shield_top]) cylinder(d = 6.3, h = sma_h);
-    color("silver") translate([J5_pos[0], J5_pos[1], shield_top + sma_h - 5]) {
+    if (faraday_mode == "passthrough") color("silver") translate([J5_pos[0], J5_pos[1], shield_top + sma_h - 5]) {
         cylinder(d = 9.2, h = 8, $fn = 6);
         cylinder(d = 9.6, h = 31);
         translate([0, 0, 26]) rotate([90, 0, 0]) cylinder(d = 1.6, h = 11.6, center = true);

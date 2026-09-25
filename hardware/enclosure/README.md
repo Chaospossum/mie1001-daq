@@ -60,8 +60,9 @@ Tools: the OpenSCAD 2026.09.23 AppImage from files.openscad.org is in `~/Applica
   strain relief. Tighten the terminal screws from above through the **screwdriver windows** in the lid
   (2.5–3 mm blade).
 - **J4** (PRE_OUT, A2, VREF, GND): a 12 × 4.5 mm slot above the socket takes 4 Dupont jumpers from above.
-- **J5 Faraday cup:** `faraday_mode = "passthrough"` (default) gives a Ø12.5 hole, so the SMA-male → BNC-female
-  adapter screwed onto J5 sticks up through the lid. Two slots next to the hole let you **cable-tie the BNC cable
+- **J5 Faraday cup:** `faraday_mode = "none"` (default, team choice 25 Sept) makes a plain box for the UNO and
+  shield only: no opening for the detector, and the SMA jack stays under the lid. `faraday_mode = "passthrough"` gives a Ø12.5 hole, so the SMA-male → BNC-female
+  adapter screwed onto J5 sticks up through the lid (not the default any more). Two slots next to the hole let you **cable-tie the BNC cable
   to the lid**, so a pull on the cable doesn't twist the SMA jack off the shield. `faraday_mode = "bulkhead"`
   gives a 9.7 mm D-hole (8.9 mm flat) for a BNC bulkhead jack in the lid, with a short SMA-male pigtail inside.
   That is more robust mechanically, but the extra cable adds capacitance and triboelectric noise at pA levels,
