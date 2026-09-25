@@ -1,0 +1,5 @@
+{
+  "name": "quad",
+  "author": "Team 5",
+  "pins": ["IN", "OUT", "GND"]
+}

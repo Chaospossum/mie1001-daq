@@ -1,0 +1,106 @@
+version	1
+author	"Team 5"
+editor	"wokwi"
+parts	
+0	
+type	"wokwi-arduino-uno"
+id	"uno"
+top	0
+left	0
+attrs	{}
+1	
+type	"chip-mcp4725"
+id	"dac"
+top	-230
+left	30
+attrs	{}
+2	
+type	"chip-quad"
+id	"quad"
+top	-230
+left	260
+attrs	{}
+3	
+type	"chip-ads1115"
+id	"adc"
+top	-110
+left	260
+attrs	{}
+connections	
+0	
+0	"uno:5V"
+1	"dac:VCC"
+2	"red"
+3	
+0	"v-40"
+1	"h20"
+1	
+0	"uno:GND.1"
+1	"dac:GND"
+2	"black"
+3	
+0	"v-30"
+1	"h30"
+2	
+0	"uno:A5"
+1	"dac:SCL"
+2	"green"
+3	
+0	"v-60"
+1	"h10"
+3	
+0	"uno:A4"
+1	"dac:SDA"
+2	"green"
+3	
+0	"v-70"
+1	"h0"
+4	
+0	"uno:5V"
+1	"adc:VCC"
+2	"red"
+3	
+0	"v-20"
+1	"h200"
+5	
+0	"uno:GND.1"
+1	"adc:GND"
+2	"black"
+3	
+0	"v-10"
+1	"h210"
+6	
+0	"uno:A5"
+1	"adc:SCL"
+2	"green"
+3	
+0	"v-50"
+1	"h190"
+7	
+0	"uno:A4"
+1	"adc:SDA"
+2	"green"
+3	
+0	"v-45"
+1	"h180"
+8	
+0	"dac:OUT"
+1	"quad:IN"
+2	"orange"
+3	
+0	"h20"
+9	
+0	"quad:OUT"
+1	"adc:A0"
+2	"orange"
+3	
+0	"h20"
+1	"v40"
+10	
+0	"quad:GND"
+1	"uno:GND.2"
+2	"black"
+3	
+0	"v60"
+1	"h-100"
+dependencies	{}

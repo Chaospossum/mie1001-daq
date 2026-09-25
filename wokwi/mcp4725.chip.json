@@ -1,0 +1,5 @@
+{
+  "name": "mcp4725",
+  "author": "Team 4",
+  "pins": ["VCC", "GND", "SCL", "SDA", "OUT"]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "ADS1115 ADC",
+  "author": "Team 5",
+  "pins": [
+    "VCC",
+    "GND",
+    "SCL",
+    "SDA",
+    "ADDR",
+    "ALRT",
+    "A0",
+    "A1",
+    "A2",
+    "A3"
+  ],
+  "controls": []
+}

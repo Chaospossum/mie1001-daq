@@ -1,0 +1,5 @@
+{
+  "name": "signal",
+  "author": "Team 5",
+  "pins": ["OUT", "GND"]
+}

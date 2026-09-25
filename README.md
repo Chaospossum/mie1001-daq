@@ -17,6 +17,7 @@ Faraday cup ─► preamp (LMP7721, 100 MΩ) ─► ADS1115 16-bit ADC ─I²C�
 | `hardware/mie1001_daq_simple/` | **Simple shield, rev E**: plug-in ADS1115 + MCP4725 breakouts, screw terminals, and the Faraday-cup preamp. Ordered from Digi-Key and hand-soldered. See its README |
 | `hardware/mie1001_daq_board/` | **Full shield, rev E**: everything soldered (ADS1115, MCP4725, preamp), BNC input, CEM/Faraday ranges |
 | `hardware/enclosure/` | First idea for a 3D-printed enclosure (transparent PETG, OpenSCAD source, STLs, renders). Not printed, not a team decision yet |
+| `wokwi/` | Wokwi simulation of the whole loop: Uno → MCP4725 → quadrupole stand-in → ADS1115, with custom chips written in C and a PEG1000 test spectrum |
 | `data/` | Real measurements (`2026-09-20_selftest/`: first self-tests of the ADS1115 and MCP4725 on the Uno, with plots) and clearly labelled simulations (`simulations/`) |
 
 ### Firmware

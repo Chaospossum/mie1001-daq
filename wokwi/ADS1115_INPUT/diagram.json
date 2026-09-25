@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "author": "Team 5",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-arduino-uno", "id": "uno", "top": 0, "left": 0, "attrs": {} },
+    { "type": "chip-mcp4725", "id": "dac", "top": -230, "left": 30, "attrs": {} },
+    { "type": "chip-quad", "id": "quad", "top": -230, "left": 260, "attrs": {} },
+    { "type": "chip-ads1115", "id": "adc", "top": -110, "left": 260, "attrs": {} }
+  ],
+  "connections": [
+    [ "uno:5V", "dac:VCC", "red", [ "v-40", "h20" ] ],
+    [ "uno:GND.1", "dac:GND", "black", [ "v-30", "h30" ] ],
+    [ "uno:A5", "dac:SCL", "green", [ "v-60", "h10" ] ],
+    [ "uno:A4", "dac:SDA", "green", [ "v-70", "h0" ] ],
+
+    [ "uno:5V", "adc:VCC", "red", [ "v-20", "h200" ] ],
+    [ "uno:GND.1", "adc:GND", "black", [ "v-10", "h210" ] ],
+    [ "uno:A5", "adc:SCL", "green", [ "v-50", "h190" ] ],
+    [ "uno:A4", "adc:SDA", "green", [ "v-45", "h180" ] ],
+
+    [ "dac:OUT", "quad:IN", "orange", [ "h20" ] ],
+    [ "quad:OUT", "adc:A0", "orange", [ "h20", "v40" ] ],
+    [ "quad:GND", "uno:GND.2", "black", [ "v60", "h-100" ] ]
+  ],
+  "dependencies": {}
+}
