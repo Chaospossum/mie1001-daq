@@ -5,13 +5,13 @@
       "Application": "Pcbnew",
       "Version": "10.0.6"
     },
-    "CreationDate": "2026-09-24T16:02:01+02:00"
+    "CreationDate": "2026-09-25T16:57:47+02:00"
   },
   "GeneralSpecs": {
     "ProjectId": {
       "Name": "mie1001_daq_simple",
       "GUID": "6d696531-3030-4315-9f64-61715f73696d",
-      "Revision": "rev?"
+      "Revision": "E"
     },
     "Size": {
       "X": 68.68,

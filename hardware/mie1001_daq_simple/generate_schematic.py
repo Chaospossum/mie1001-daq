@@ -7,8 +7,8 @@ A plain Arduino UNO R3 shield for the breakout boards used in class:
 plug into female headers.  Screw terminals for the signal in, the QPS mass command out and the
 trigger in; the breakouts bring their own I2C pull-ups.
 Rev D adds an electrometer preamp (LMP7721 transimpedance amplifier, 100 MOhm) for a Faraday cup on a
-vertical SMA jack, with a guarded input and a buffered 2.5 V reference.  Its SMD parts are assembled by
-JLCPCB; everything else stays through-hole and hand-soldered.
+vertical SMA jack, with a guarded input and a buffered 2.5 V reference.  Everything is ordered from
+Digi-Key and hand-soldered (JLCPCB assembly of the SMD parts is an optional alternative).
 Run:  python3 generate_schematic.py
 """
 import math, uuid, os, re, csv
@@ -219,6 +219,16 @@ defsym("DAQ:Conn_1x04", [pin("1", "1", -11.43, 3.81, 0), pin("2", "2", -11.43, 1
             Footprint="Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical",
             Datasheet="", Description="1x4 pin header"))
 
+# ---- rev E: 2-pad solder jumper, bridged by a copper strip (net tie) until cut
+defsym("DAQ:SolderJumper_2_Bridged", [pin("1", "A", 0, 5.08, 270, "passive", 2.54),
+                                      pin("2", "B", 0, -5.08, 90, "passive", 2.54)],
+       {1: [rect(-1.27, 2.54, 1.27, 0.381, "outline"), rect(-1.27, -0.381, 1.27, -2.54, "outline"),
+            rect(-0.508, 0.381, 0.508, -0.381, "outline")]},
+       dict(Reference="JP", Value="SolderJumper_2_Bridged",
+            Footprint="Jumper:SolderJumper-2_P1.3mm_Bridged_RoundedPad1.0x1.5mm",
+            Datasheet="", Description="Solder jumper, 2 pads, closed by a copper bridge (cut to open)"),
+       hide_numbers=True, name_offset=0)
+
 # ---- power symbols
 defsym("DAQ:+5V", [pin("1", "+5V", 0, 0, 90, "power_in", 0)],
        {1: [poly([(-0.762, 1.27), (0, 2.54)], 0.2), poly([(0, 0), (0, 2.54)], 0.2),
@@ -280,7 +290,7 @@ def place(ref, lib, x, y, rot=0, unit=1, **kw):
     rx, ry = part.ref_at or (x + 8.89, y - 2.54)
     vx, vy = part.val_at or (x + 8.89, y + 0.0)
     out = [f'  (symbol (lib_id "{lib}") (at {x} {y} {rot}){" (mirror %s)" % part.mirror if part.mirror else ""}'
-           f' (unit {unit}) (exclude_from_sim no) (in_bom {"no" if d["power"] else "yes"})'
+           f' (unit {unit}) (exclude_from_sim no) (in_bom {"no" if d["power"] or ref.startswith("JP") else "yes"})'
            f' (on_board yes) (dnp no)',
            f'    (uuid "{U()}")']
     order = ["Reference", "Value", "Footprint", "Datasheet", "Description",
@@ -386,43 +396,43 @@ defsym("DAQ:R_THT", [pin("1", "~", 0, 5.08, 270, "passive", 2.54), pin("2", "~",
 BOM = {
   "ARD1": ("Arduino UNO R3 SMD (ATmega328P TQFP-32)", "Arduino or compatible", "UNO R3 SMD CH340 clone (marked V1888); A000073 is the official SMD edition", "do not order: use your own board"),
   "U1": ("Adafruit ADS1115 breakout (original, 1x10)", "Adafruit", "1085 (ORIGINAL 1x10 version, from the class kit)", "do not order"),
-  "U2": ("SparkFun MCP4725 breakout", "SparkFun",       "BOB-12918",         "1568-12918-ND"),
+  "U2": ("SparkFun MCP4725 breakout", "SparkFun Electronics", "12918",             "1568-12918-ND"),
   "J1": ("Signal in",                "Phoenix Contact", "1984617",           "277-1721-ND"),
   "J2": ("QPS out",                  "Phoenix Contact", "1984617",           "277-1721-ND"),
   "J3": ("Trigger in",               "Phoenix Contact", "1984617",           "277-1721-ND"),
-  "J4": ("Spare ADC in",             "Sullins",         "PPTC041LFBN-RC",    "S7002-ND"),
+  "J4": ("Spare ADC in",             "Sullins Connector Solutions",         "PPTC041LFBN-RC",    "S7002-ND"),
   # sockets the breakouts plug into (listed so they get ordered)
-  "X1": ("Female header 1x10 for U1", "Sullins",        "PPTC101LFBN-RC",    "S7008-ND"),
-  "X2": ("Female header 1x6 for U2",  "Sullins",        "PPTC061LFBN-RC",    "S7004-ND"),
-  "R1": ("1 kOhm 0.25 W",                  "Yageo",           "CFR-25JB-52-1K",    "1.0KQBK-ND"),
-  "R2": ("4.7 kOhm 0.25 W",                 "Yageo",           "CFR-25JB-52-4K7",   "13-CFR-25JB-52-4K7-ND"),
-  "R3": ("100 kOhm 0.25 W",                "Yageo",           "CFR-25JB-52-100K",  "13-CFR-25JB-52-100K-ND"),
-  "C1": ("100 nF 50 V X7R ceramic",    "Vishay",          "K104K15X7RF5TL2",   "BC1084CT-ND"),
+  "X1": ("Female header 1x10 for U1", "Sullins Connector Solutions",        "PPTC101LFBN-RC",    "S7008-ND"),
+  "X2": ("Female header 1x6 for U2",  "Sullins Connector Solutions",        "PPTC061LFBN-RC",    "S7004-ND"),
+  "R1": ("1 kOhm 0.25 W",                  "YAGEO",           "CFR-25JB-52-1K",    "1.0KQBK-ND"),
+  "R2": ("4.7 kOhm 0.25 W",                 "YAGEO",           "CFR-25JB-52-4K7",   "13-CFR-25JB-52-4K7-ND"),
+  "R3": ("100 kOhm 0.25 W",                "YAGEO",           "CFR-25JB-52-100K",  "13-CFR-25JB-52-100K-ND"),
+  "C1": ("100 nF 50 V X7R ceramic",    "Vishay Beyschlag/Draloric/BC Components",          "K104K15X7RF5TL2",   "BC1084CT-ND"),
   "CR1": ("1N4148",                   "onsemi",          "1N4148",            "1N4148FS-ND"),
   "CR2": ("1N4148",                   "onsemi",          "1N4148",            "1N4148FS-ND"),
-  # ---- rev D preamp (SMD parts assembled by JLCPCB; J5 and R4 hand-soldered)
+  # ---- rev D preamp (all hand-soldered; JLCPCB assembly of the SMD parts is optional)
   "J5":  ("Detector in, SMA jack vertical", "Amphenol RF", "132134",          "ACX1230-ND"),
-  "R4":  ("10 kOhm 0.25 W",            "Yageo",           "CFR-25JB-52-10K",   "10KQBK-ND"),
-  "R5":  ("1k 1% 0603",                "Yageo",           "RC0603FR-071KL",    "311-1.00KHRCT-ND"),
-  "R6":  ("100M 1% 1206",              "Stackpole",       "HVCB1206FKC100M",   "HVCB1206FKC100MCT-ND"),
-  "R7":  ("1k 1% 0603",                "Yageo",           "RC0603FR-071KL",    "311-1.00KHRCT-ND"),
-  "R8":  ("10k 1% 0603",               "Yageo",           "RC0603FR-0710KL",   "311-10.0KHRCT-ND"),
-  "R9":  ("10k 1% 0603",               "Yageo",           "RC0603FR-0710KL",   "311-10.0KHRCT-ND"),
-  "R10": ("100R 1% 0603",              "Yageo",           "RC0603FR-07100RL",  "311-100HRCT-ND"),
-  "R11": ("1k 1% 0603",                "Yageo",           "RC0603FR-071KL",    "311-1.00KHRCT-ND"),
-  "C2":  ("10pF C0G 50V 0603",         "Murata",          "GRM1885C1H100JA01D", "490-1403-1-ND"),
-  "C3":  ("100nF X7R 50V 0603",        "Samsung",         "CL10B104KB8NNNC",   "1276-1000-1-ND"),
-  "C4":  ("10uF X5R 25V 0805",         "Samsung",         "CL21A106KAYNNNE",   "1276-2891-1-ND"),
-  "C5":  ("1uF X5R 50V 0603",          "Samsung",         "CL10A105KB8NNNC",   "1276-1860-1-ND"),
-  "C6":  ("1uF X5R 50V 0603",          "Samsung",         "CL10A105KB8NNNC",   "1276-1860-1-ND"),
-  "C7":  ("100nF X7R 50V 0603",        "Samsung",         "CL10B104KB8NNNC",   "1276-1000-1-ND"),
+  "R4":  ("10 kOhm 0.25 W",            "YAGEO",           "CFR-25JB-52-10K",   "13-CFR-25JB-52-10K-ND"),
+  "R5":  ("1k 1% 0603",                "YAGEO",           "RC0603FR-071KL",    "311-1.00KHRCT-ND"),
+  "R6":  ("100M 1% 1206",              "Stackpole Electronics Inc",       "HVCB1206FKC100M",   "HVCB1206FKC100MCT-ND"),
+  "R7":  ("1k 1% 0603",                "YAGEO",           "RC0603FR-071KL",    "311-1.00KHRCT-ND"),
+  "R8":  ("100k 1% 0603",              "YAGEO",           "RC0603FR-07100KL",  "311-100KHRCT-ND"),
+  "R9":  ("100k 1% 0603",              "YAGEO",           "RC0603FR-07100KL",  "311-100KHRCT-ND"),
+  "R10": ("100R 1% 0603",              "YAGEO",           "RC0603FR-07100RL",  "311-100HRCT-ND"),
+  "R11": ("1k 1% 0603",                "YAGEO",           "RC0603FR-071KL",    "311-1.00KHRCT-ND"),
+  "C2":  ("10pF C0G 50V 0603",         "Samsung Electro-Mechanics",         "CL10C100JB8NNNC",   "1276-1027-1-ND"),
+  "C3":  ("100nF X7R 50V 0603",        "Wurth Elektronik", "885012206095",     "732-8013-1-ND"),
+  "C4":  ("10uF X5R 25V 0805",         "Taiyo Yuden",     "TMK212BBJ106KGHT",  "587-4334-1-ND"),
+  "C5":  ("1uF X5R 25V 0603",          "Samsung Electro-Mechanics",         "CL10A105KA8NNNC",   "1276-1102-1-ND"),
+  "C6":  ("1uF X5R 25V 0603",          "Samsung Electro-Mechanics",         "CL10A105KA8NNNC",   "1276-1102-1-ND"),
+  "C7":  ("100nF X7R 50V 0603",        "Wurth Elektronik", "885012206095",     "732-8013-1-ND"),
   "CR3": ("BAV199LT1G",                "onsemi",          "BAV199LT1G",        "BAV199LT1GOSCT-ND"),
   "U3":  ("LMP7721MA/NOPB",            "Texas Instruments", "LMP7721MA/NOPB",  "LMP7721MA/NOPB-ND"),
-  "U4":  ("MCP6002-I/SN",              "Microchip",       "MCP6002-I/SN",      "MCP6002-I/SN-ND"),
+  "U4":  ("MCP6002-I/SN",              "Microchip Technology",       "MCP6002-I/SN",      "MCP6002-I/SN-ND"),
 }
 NOTES = {
   "U1": "Use the board from the class kit. The footprint is a 1x10 female header (PPTC101LFBN-RC) and fits only the ORIGINAL Adafruit board (one row: VDD GND SCL SDA ADDR ALRT A0-A3). What Digi-Key/Adafruit sell today as 1085 (1528-1085-ND) is the STEMMA QT version with two rows of 6: it does NOT fit.",
-  "U2": "The footprint is a 1x6 female header (PPTC061LFBN-RC). Pull-ups ON (default), A0 jumper to GND (default) -> address 0x60. Retired at SparkFun, still at Digi-Key.",
+  "U2": "SparkFun BOB-12918. The footprint is a 1x6 female header (PPTC061LFBN-RC). Pull-ups ON (default), A0 jumper to GND (default) -> address 0x60. Retired at SparkFun but Active at Digi-Key (656 in stock on 2026-09-25). If it runs out, use the class-kit board: no pin-compatible replacement exists (Adafruit's MCP4725 breakout has a different pin order).",
   "R1": "Series resistor on the trigger input: limits the current if the trigger is driven a little above 5 V.",
   "R2": "Series resistor on SIGNAL IN: this is the part that actually protects the ADC, limiting the input current to 1.3-2.4 mA at +/-12 V against its 10 mA absolute maximum. Gain error from the ADS1115 input impedance: under 0.1 % at +/-6.144 V, 0.66 % at +/-0.256 V.",
   "R3": "Pull-down on D8: an unconnected TRIG IN reads LOW instead of floating.",
@@ -431,21 +441,23 @@ NOTES = {
   "CR2": "Same, to GND, if the input goes below 0 V. Mind the stripe: cathode (striped end) to the signal.",
   "J5": "Faraday cup input. SMA with a PTFE insulator; use a BNC-female to SMA-male adapter for a BNC cable. Hand-solder. The centre pin sits in the VREF guard: keep it clean.",
   "R4": "Surge resistor at the input: limits the current into CR3 if the cup cable carries a discharge. Through-hole, mounted standing up; hand-solder. 10 uV drop per nA.",
-  "R6": "100 MOhm feedback: 1 nA -> 0.1 V. Guard the pads, keep them clean, no flux residue. JLC/LCSC has no Stackpole HVCB stock: use Uniroyal 1206W4F1006T5E (C59781), 1% +-100 ppm/C.",
-  "C2": "MUST be fitted: without it the preamp oscillates with the cable capacitance. With R6 it sets a 159 Hz bandwidth.",
+  "R6": "100 MOhm feedback: 1 nA -> 0.1 V. Guard the pads, keep them clean, no flux residue. Must stay a high-value low-leakage 1 % part: do not substitute a general-purpose 1206. (The LCSC column is only for the optional JLC route: Uniroyal 1206W4F1006T5E.)",
+  "C2": "C0G/NP0 only. MUST be fitted: without it the preamp oscillates with the cable capacitance. With R6 it sets a 159 Hz bandwidth.",
   "R7": "Protects the LMP7721 IN+ from spikes on VREF; carries only fA.",
   "R10": "Isolation resistor so the MCP6002 VREF buffer can drive C5.",
+  "C5": "VREF output capacitor (25 V is plenty at 2.5 V).",
   "C6": "With R11: 159 Hz anti-alias filter before ADS1115 A1.",
+  "R8": "Rev E: 100k/100k (was 10k/10k). With C4 10 uF the divider noise corner is 0.32 Hz, so 50 Hz ripple on the USB 5 V is attenuated ~160x before U4A. MCP6002 input bias ~1 pA: no error.",
   "CR3": "Clamp tied to VREF on both ends: 0 V bias means near-zero leakage into the pA node. Do not substitute a switching diode.",
-  "U3": "Electrometer preamp (3 fA typical input bias). Guard ring (VREF) on both layers around pins 1/8 and the feedback parts, no solder mask there. Clean flux off after soldering.",
+  "U3": "Electrometer preamp (3 fA typical input bias). Guard ring (VREF) on both layers around pins 1/8 and the feedback parts, closed under the chip between pins 2 and 7; the guard copper is left free of solder mask (rev E), tracks and the gaps next to them stay masked. Clean flux off after soldering.",
   "U4": "Unit A buffers the 2.5 V reference (VREF); unit B is unused, wired as a follower.",
 }
-LCSC = {"R5": "C21190", "R6": "C59781", "R7": "C21190", "R8": "C25804", "R9": "C25804", "R10": "C22775",
-        "R11": "C21190", "C2": "C1634", "C3": "C14663", "C4": "C15850", "C5": "C15849", "C6": "C15849",
+LCSC = {"R5": "C21190", "R6": "C59781", "R7": "C21190", "R8": "C25803", "R9": "C25803", "R10": "C22775",
+        "R11": "C21190", "C2": "C1634", "C3": "C14663", "C4": "C15850", "C5": "C5673", "C6": "C5673",
         "C7": "C14663", "CR3": "C145516", "U3": "C124427", "U4": "C116706"}
 SHORT = {"R1": "1 kΩ", "R2": "4.7 kΩ", "R3": "100 kΩ", "C1": "100 nF", "CR1": "1N4148", "CR2": "1N4148", "J1": "SIGNAL IN", "J2": "QPS OUT", "J3": "TRIG IN", "J4": "SPARE ADC A1-A3",
          "U1": "ADS1115 breakout", "U2": "MCP4725 breakout",
-         "J5": "DET IN (SMA)", "R4": "10 kΩ", "R5": "1k", "R6": "100M", "R7": "1k", "R8": "10k", "R9": "10k",
+         "J5": "DET IN (SMA)", "R4": "10 kΩ", "R5": "1k", "R6": "100M", "R7": "1k", "R8": "100k", "R9": "100k",
          "R10": "100R", "R11": "1k", "C2": "10pF", "C3": "100nF", "C4": "10uF", "C5": "1uF", "C6": "1uF",
          "C7": "100nF", "CR3": "BAV199", "U3": "LMP7721", "U4": "MCP6002"}
 
@@ -529,7 +541,7 @@ text("Green line = wire.  Dot = wires joined.\n"
 for rx, nm in ((127.64, "+5V"), (135.26, "SDA"), (142.88, "SCL"), (150.5, "GND")):
     text(nm, rx, 104.14, 1.27, bold=True)
 text("ARD1  Arduino UNO R3 = the controller", 271.78, 99.06, 1.27, bold=True)
-text("Reads U1 and sets U2 over I2C,\nsends the data to the laptop over USB.\nThis board plugs on top of it.\nPin NAMES shown (D2, D8, SDA...), as printed on the UNO.\nSDA/A4 and SCL/A5 are the SAME wires as SDA and SCL\ninside the UNO: keep A4 and A5 free.\nYour board: Uno R3 CH340G clone, IOREF is labelled 5V.",
+text("Reads U1 and sets U2 over I2C,\nsends the data to the laptop over USB.\nThis board plugs on top of it.\nPin NAMES shown (D2, D8, SDA...), as printed on the UNO.\nSDA/A4 and SCL/A5 are the SAME signals as SDA and SCL:\nthe shield connects both (for clones without SDA/SCL pins).\nNever use A4/A5 as analog inputs.\nYour board: Uno R3 CH340G clone, IOREF is labelled 5V.",
      271.78, 102.87, 1.0)
 text("SIGNAL IN: preamp output from the detector (Team 3)", 190.5, 35.56, 1.27, bold=True)
 text("RDY: ADC tells the UNO a reading is ready", 180.34, 26.67, 1.0)
@@ -575,7 +587,7 @@ text("INPUT PROTECTION AND FILTER", 154.94, 96.52, 1.27, bold=True)
 text("R2 4.7 kΩ: limits the current into the ADC\n     if the input hits +/-12 V (2.4 mA max)\n"
      "CR1, CR2: clamp diodes, send an over-voltage to +5V or GND\n"
      "C1 100 nF: with R2 a 339 Hz low-pass filter against fast noise", 154.94, 100.33, 1.0)
-text("J4 (ADS1115 inputs, not the UNO's): 1 = A1 preamp out, 2 = A2 spare,\n3 = A3 VREF 2.5 V, 4 = GND.  Pins 1 and 3 are for a meter or scope only.", 184.15, 90.17, 1.0)
+text("J4 (ADS1115 inputs, not the UNO's): 1 = A1 preamp out, 2 = A2 (QPS read-back\nwhile JP1 is bridged), 3 = A3 VREF 2.5 V, 4 = GND.  Pins 1-3 are for a meter or scope only.", 184.15, 90.17, 1.0)
 
 # ---- spare inputs A1-A3 on J4
 J4 = place("J4", "DAQ:Spare_1x04", 175.26, 86.36, fields=F("J4"), ref_at=(184.15, 85.09), val_at=(184.15, 87.63), just="left")
@@ -587,7 +599,12 @@ wire(J4.p(4), (XGND, y(J4, 4)))
 J2 = place("J2", "DAQ:Screw_Terminal_1x02", 175.26, 121.92, fields=F("J2"), ref_at=(175.26, 113.03), val_at=(175.26, 115.57))
 wire(U2.p(1), (152.4, y(U2, 1)), J2.p(1)); label("QPS", (152.4, y(U2, 1)))
 wire(J2.p(2), (XGND, y(J2, 2)))
-text("QPS OUT: mass command 0-5 V\nto the Extrel controller (Team 4)", 154.94, 128.27, 1.0)
+text("QPS OUT: mass command 0-5 V\nto the Extrel controller (Team 4)\nJP1 (bridged by default) reads it back on ADS1115 A2.\nCut JP1's copper bridge to free A2 / J4-2.", 154.94, 128.27, 1.0)
+JP1 = place("JP1", "DAQ:SolderJumper_2_Bridged", 157.48, 114.3,
+            fields={"Value": "QPS readback", "Note": "Solder jumper, closed by a copper bridge: QPS OUT -> ADS1115 A2. Cut the bridge to use A2 (J4-2) as a free input; solder it to close again. Not a part: nothing to order."},
+            ref_at=(153.67, 113.03), val_at=(153.67, 115.57), just="right")
+wire(JP1.p(2), (157.48, 120.65)); junction((157.48, 120.65))
+wire(JP1.p(1), (165.1, 109.22)); label("AIN2", (165.1, 109.22))
 
 # ---- trigger in: J3 -> R1 -> UNO D8, R3 pull-down
 R1 = place("R1", "DAQ:R_THT", 279.4, 142.24, 90, fields=F("R1"), ref_at=(279.4, 138.43), val_at=(279.4, 146.05))
@@ -601,6 +618,12 @@ wire(R1.p(2), (285.75, 142.24), J3.p(1)); label("TRIG_EXT", (285.75, 142.24))
 wire(J3.p(2), (292.1, y(J3, 2)), (292.1, YGB))
 wire(R3.p(2), (269.24, YGB))
 junction((269.24, 142.24))
+
+# ---- rev E: A4/A5 carry SDA/SCL too (same signals on a real R3; clones without the SDA/SCL pins need them)
+for pn, nm in (("13", "SDA"), ("14", "SCL")):
+    p = A1.p(pn)
+    wire(p, (p[0], p[1] + 2.54 if nm == "SDA" else p[1] + 2.54))
+    label(nm, (p[0], p[1] + 2.54), rot=270, justify="right bottom")
 
 # ---- GND return along the bottom, under the UNO
 wire((XGND, YGB), (203.2, YGB), (A1.p("6")[0], YGB), (A1.p("7")[0], YGB), (269.24, YGB), (292.1, YGB))
@@ -687,11 +710,11 @@ text("The Faraday cup gives a tiny current (pA to nA).  U3 turns it into a volta
      "(R6 = 100 MΩ).  The input is held at VREF = 2.5 V, so the output moves DOWN from 2.5 V for positive ions.\n"
      "Full scale is about 25 nA.  Read it on the ADS1115 as A1 - A3 (PRE_OUT - VREF): one count at GAIN_ONE = 1.25 pA.\n"
      "R4 + CR3 protect U3 from a discharge on the cable.  C2 keeps it from oscillating.  R11/C6 filter before the ADC.\n"
-     "U4A makes VREF from 5 V (R8/R9 divider, C4 filter).  The copper guard ring (VREF) around the input stops leakage.",
+     "U4A makes VREF from 5 V (R8/R9 100k divider, C4 filter: 0.32 Hz).  The copper guard ring (VREF) around the input stops leakage.",
      22.86, 266.7, 1.0)
 
 # ---- every UNO pin not used by the shield
-for pn in ("1", "2", "3", "4", "8", "9", "10", "11", "12", "13", "14", "15", "16", "18", "19", "20",
+for pn in ("1", "2", "3", "4", "8", "9", "10", "11", "12", "15", "16", "18", "19", "20",
            "21", "22", "24", "25", "26", "27", "28", "30"):
     nc(A1.p(pn))
 
@@ -734,12 +757,12 @@ header = f'''(kicad_sch (version 20231120) (generator "eeschema") (generator_ver
   (paper "A3")
   (title_block
     (title "SIMPLE DAQ shield for Arduino UNO R3 - class breakout boards")
-    (date "2026-09-24")
-    (rev "D")
+    (date "2026-09-25")
+    (rev "E")
     (company "MIE1001 Team 5 - Foundation of Imaging Engineering, Maastricht University (FSE, M4I)")
     (comment 1 "Portable quadrupole mass spectrometer - data acquisition and control block")
     (comment 2 "Team 5 scope: ADC side. MCP4725 mass command is fitted for Team 4's sequencer.")
-    (comment 3 "Digi-Key and LCSC part numbers in BOM.csv. JLCPCB assembles the preamp SMD parts only.")
+    (comment 3 "Order everything from Digi-Key: fab/digikey_bom.csv. All parts hand-soldered.")
     (comment 4 "Firmware base: Grinias et al., J. Chem. Educ. 2016, 93, 1316")
   )
 '''
@@ -776,8 +799,8 @@ for x in offgrid_pins[:5]: print("   off-grid pin", x)
 # BOM
 rows = {}
 for ref, pr in placed.items():
-    if ref.startswith("#"):
-        continue
+    if ref.startswith("#") or ref not in BOM:
+        continue          # power symbols; JP1 is copper, not a part
     v, mfr, mpn, dk = BOM[ref]
     key = (v, mfr, mpn, dk, pr.fields.get("Footprint", LIB[pr.lib]["props"]["Footprint"]))
     rows.setdefault(key, []).append(ref)
@@ -797,7 +820,8 @@ with open(os.path.join(here, "BOM.csv"), "w", newline="") as f:
     for ref in [r for r in BOM if r not in placed]:
         v, mfr, mpn, dk = BOM[ref]
         w.writerow([1, ref, v, "(on U1/U2 footprint)", mfr, mpn, dk, "", ""])
-    w.writerow([1, "-", "Stacking header set for UNO R3 (1x10, 2x 1x8, 1x6)", "", "Adafruit", "85", "", "",
-                "Adafruit product 85 (Adafruit, Jameco, Amazon); 10.5 mm legs clear the UNO's USB-B jack."])
+    w.writerow([1, "-", "Stacking header set for UNO R3 (1x10, 2x 1x8, 1x6)", "", "Adafruit Industries LLC", "85",
+                "1528-1074-ND", "",
+                "Adafruit product 85, Arduino R3 shield stacking headers; 10.5 mm legs clear the UNO's USB-B jack."])
 print(f"BOM lines: {len(rows)}  parts: {sum(len(v) for v in rows.values())}")
 print("written:", os.path.join(here, "mie1001_daq_simple.kicad_sch"))

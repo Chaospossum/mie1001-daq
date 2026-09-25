@@ -1,17 +1,17 @@
 ** Drc report for mie1001_daq_simple.kicad_pcb **
-** Created on 2026-09-24T16:01:59 **
+** Created on 2026-09-25T16:57:25 **
 ** Report includes: Errors, Warnings **
 
 ** Found 4 DRC violations **
+[lib_footprint_mismatch]: Footprint 'TerminalBlock_Phoenix_PT-1,5-2-3.5-H_1x02_P3.50mm_Horizontal' does not match copy in library 'TerminalBlock_Phoenix'
+    Local override; warning
+    @(75.7000 mm, 74.8000 mm): Footprint J3
 [lib_footprint_mismatch]: Footprint 'TerminalBlock_Phoenix_PT-1,5-2-3.5-H_1x02_P3.50mm_Horizontal' does not match copy in library 'TerminalBlock_Phoenix'
     Local override; warning
     @(137.0000 mm, 88.0000 mm): Footprint J2
 [lib_footprint_mismatch]: Footprint 'TerminalBlock_Phoenix_PT-1,5-2-3.5-H_1x02_P3.50mm_Horizontal' does not match copy in library 'TerminalBlock_Phoenix'
     Local override; warning
     @(75.7000 mm, 83.6000 mm): Footprint J1
-[lib_footprint_mismatch]: Footprint 'TerminalBlock_Phoenix_PT-1,5-2-3.5-H_1x02_P3.50mm_Horizontal' does not match copy in library 'TerminalBlock_Phoenix'
-    Local override; warning
-    @(75.7000 mm, 74.8000 mm): Footprint J3
 [lib_footprint_mismatch]: Footprint 'Arduino_UNO_R3' does not match copy in library 'Module'
     Local override; warning
     @(100.0000 mm, 100.0000 mm): Footprint ARD1

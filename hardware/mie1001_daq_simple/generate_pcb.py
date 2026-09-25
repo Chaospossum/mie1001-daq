@@ -63,6 +63,7 @@ PLACE = {   # ref: (x, y, rotation or None if oriented below)
     "R10": (1.20, 45.60, None),     # 100R buffer isolation
     "C5": (4.60, 45.60, None),      # 1u VREF reservoir
     "C7": (7.80, 43.20, None),      # 100n at the MCP6002 VDD
+    "JP1": (27.40, 14.00, None),    # rev E: QPS read-back solder jumper (bridged), AIN2 left, QPS right
 }
 # VREF guard, poured on both layers around every node at the preamp input potential, >= 1 mm clear of
 # it on all sides, with an octagon around the SMA centre pin.  The ground pours are cut out under it.
@@ -75,7 +76,8 @@ SENS_NETS = {"/COAX_IN", "/DET_IN", "/TIA_IN", "/TIA_REF"}
 NEAR_OK = SENS_NETS | {"/VREF", "/TIA_OUT"}
 HOLES = [(-13.97, 0.00), (38.10, 5.08), (38.10, 33.02)]
 SMD_REFS = {"R5", "R6", "R7", "R8", "R9", "R10", "R11", "C2", "C3", "C4", "C5", "C6", "C7", "CR3", "U3", "U4"}
-ROUTE_ORDER = ["/DET_IN", "/TIA_IN", "/TIA_REF", "/TIA_OUT", "/PRE_OUT", "/VREF", "/VREF_BUF",
+# DET_IN and TIA_OUT are laid by hand (rev E): TIA_OUT leaves the guard on the bottom layer only
+ROUTE_ORDER = ["/TIA_IN", "/TIA_REF", "/PRE_OUT", "/VREF", "/VREF_BUF",
                "/VREF_DIV", "/BUF_B",
                "/SIG_EXT", "/SIG", "/QPS", "/RDY", "/SDA", "/SCL", "/TRIG", "/TRIG_EXT", "/AIN2", "+5V", "GND"]
 
@@ -128,6 +130,10 @@ def main():
     nc.SetClearance(MM(DRC_CLEAR)); nc.SetTrackWidth(MM(gp.TRACK))
     nc.SetViaDiameter(MM(gp.VIA_D)); nc.SetViaDrill(MM(gp.VIA_DRILL))
     gp.outline(board)
+    tb = board.GetTitleBlock()
+    tb.SetTitle("SIMPLE DAQ shield for Arduino UNO R3 - class breakout boards + Faraday-cup preamp")
+    tb.SetRevision("E"); tb.SetDate("2026-09-25")
+    tb.SetCompany("MIE1001 Team 5 - Maastricht University (FSE, M4I)")
 
     nets, fps = {}, {}
     for ref, (val, fpname, uuid, fields) in sorted(comps.items()):
@@ -172,6 +178,7 @@ def main():
     gp.orient(fps["R10"], "1", "2", (1, 0))    # VREF_BUF left, VREF right
     gp.orient(fps["C5"], "1", "2", (1, 0))     # VREF left, GND right
     gp.orient(fps["C7"], "1", "2", (0, 1))     # +5V up, GND down
+    gp.orient(fps["JP1"], "1", "2", (1, 0))    # AIN2 left, QPS right
     for ref, (x, y, rot) in PLACE.items():
         fps[ref].SetPosition(P(x, y))
     fps["ARD1"].Flip(P(0, 0), pcbnew.FLIP_DIRECTION_TOP_BOTTOM)     # library UNO is a back view
@@ -267,7 +274,7 @@ def main():
     silk("IN", -20.2, 25.2, 1.0, just="left"); silk("GND", -20.2, 21.7, 1.0, just="left")
     silk("QPS OUT", 33.4, 17.2, 1.0, just="right")
     silk("OUT", 33.4, 12.0, 1.0, just="right"); silk("GND", 33.4, 15.5, 1.0, just="right")
-    silk("simple DAQ shield  rev D", -26.2, 45.4, 1.0, just="left", bold=True)
+    silk("simple DAQ shield  rev E", -26.2, 45.4, 1.0, just="left", bold=True)
     silk("MIE1001 SUFFERING", -26.2, 43.0, 1.4, just="left", bold=True)
     silk("WE PRAY TO THE", -25.5, 40.8, 1.0, just="left")
     silk("MIGHTY MACHINE GODS", -25.5, 39.2, 1.0, just="left")
@@ -276,7 +283,7 @@ def main():
     silk("N.D", -25.5, 34.0, 0.9, just="left")
     silk("DET IN", 30.4, 46.2, 1.0)
     silk("PREAMP", 14.4, 34.6, 1.0, bold=True)
-    for txt, y in [("MIE1001 Team 5  simple DAQ  rev D", 26.0),
+    for txt, y in [("MIE1001 Team 5  simple DAQ  rev E", 26.0),
                    ("ADS 0x48  MCP 0x60  RDY->D2  TRIG->D8", 24.0),
                    ("Preamp: read A1 - A3,  1 nA = 0.1 V", 22.0),
                    ("J5 = Faraday cup (SMA).  Clean all flux", 20.0),
@@ -286,6 +293,10 @@ def main():
         b.SetTextSize(pcbnew.VECTOR2I(MM(1.0), MM(1.0))); b.SetTextThickness(MM(0.16))
         b.SetPosition(P(0.5, y)); board.Add(b)
     possum(board, 27.0, 5.6)
+    fps["JP1"].Reference().SetPosition(P(27.4, 15.9)); fps["JP1"].Reference().SetTextAngleDegrees(0)
+    fps["JP1"].Reference().SetTextSize(pcbnew.VECTOR2I(MM(0.8), MM(0.8)))
+    fps["JP1"].Reference().SetTextThickness(MM(0.13))
+    silk("A2=QPS", 29.75, 14.0, 0.8, angle=90)
 
     # ------------------------------------------------------------ router
     nid = {n: k for k, n in enumerate(sorted(nets))}
@@ -326,13 +337,18 @@ def main():
             cx, cy = pcbnew.ToMM(q.x) - gp.OX, gp.OY - pcbnew.ToMM(q.y)
             net = nid.get(pad.GetNetname(), gp.BLOCK)
             sz = pad.GetSize(); hx, hy = pcbnew.ToMM(sz.x) / 2, pcbnew.ToMM(sz.y) / 2
+            rot_pad = -pad.GetOrientationDegrees()
+            if pad.GetShape() == pcbnew.PAD_SHAPE_CUSTOM:     # JP1: the anchor size is not the copper
+                bb = pad.GetBoundingBox()
+                hx, hy = pcbnew.ToMM(bb.GetWidth()) / 2, pcbnew.ToMM(bb.GetHeight()) / 2
+                c = bb.GetCenter(); cx, cy = pcbnew.ToMM(c.x) - gp.OX, gp.OY - pcbnew.ToMM(c.y); rot_pad = 0
             attr = pad.GetAttribute()
             tht = attr in (pcbnew.PAD_ATTRIB_PTH, pcbnew.PAD_ATTRIB_NPTH)
             layers = (0, 1) if tht else (0,)
             if pad.GetShape() == pcbnew.PAD_SHAPE_CIRCLE or attr == pcbnew.PAD_ATTRIB_NPTH:
                 R.add_disc(layers, cx, cy, max(hx, pcbnew.ToMM(pad.GetDrillSize().x) / 2), net)
             else:
-                R.add_rect(layers, cx, cy, hx, hy, net, rot=-pad.GetOrientationDegrees())
+                R.add_rect(layers, cx, cy, hx, hy, net, rot=rot_pad)
             if tht:
                 R.via[np.hypot(xs - cx, ys - cy) < max(hx, hy) + gp.VIA_D / 2 + gp.CLEAR + 0.05] = gp.BLOCK
 
@@ -424,8 +440,37 @@ def main():
         tr = pcbnew.PCB_TRACK(board)
         tr.SetStart(P(*a)); tr.SetEnd(P(*b)); tr.SetWidth(MM(gp.TRACK)); tr.SetLayer(pcbnew.F_Cu)
         tr.SetNet(nets["/VREF"]); board.Add(tr); R.add_segment_copper(0, a, b, vref)
+    # rev E: close the guard under the chip.  A VREF bar from pin 2 to pin 7 separates the input
+    # pins (1, 8) from V-, OUT and V+ (3, 4, 6); the guard pour fills everything above it.
+    u3["2"] = (round(pcbnew.ToMM(fps["U3"].FindPadByNumber("2").GetPosition().x) - gp.OX, 4), u3["7"][1])
+    a, b = u3["2"], (xl, u3["7"][1])
+    tr = pcbnew.PCB_TRACK(board)
+    tr.SetStart(P(*a)); tr.SetEnd(P(*b)); tr.SetWidth(MM(gp.TRACK)); tr.SetLayer(pcbnew.F_Cu)
+    tr.SetNet(nets["/VREF"]); board.Add(tr); R.add_segment_copper(0, a, b, vref)
     netpads["/VREF"] = [p for p in netpads["/VREF"]
-                        if not (p.GetParentFootprint().GetReference() == "U3" and p.GetNumber() in ("5", "7"))]
+                        if not (p.GetParentFootprint().GetReference() == "U3" and p.GetNumber() in ("2", "5", "7"))]
+    def xy(ref, n):
+        q = fps[ref].FindPadByNumber(n).GetPosition()
+        return (round(pcbnew.ToMM(q.x) - gp.OX, 4), round(gp.OY - pcbnew.ToMM(q.y), 4))
+    def hand(name, layer, pts):
+        for a, b in zip(pts, pts[1:]):
+            tr = pcbnew.PCB_TRACK(board)
+            tr.SetStart(P(*a)); tr.SetEnd(P(*b)); tr.SetWidth(MM(gp.TRACK)); tr.SetLayer(layer)
+            tr.SetNet(nets[name]); board.Add(tr); R.add_segment_copper(0 if layer == pcbnew.F_Cu else 1, a, b, nid[name])
+    # TIA_OUT (rev E): the feedback pads' side drops to the bottom layer at V1 inside the guard, runs
+    # under U3 and comes up at V2 below the bar, then to pin 4 and R11.  On the top layer the TIA_OUT
+    # copper inside the guard is an island, so no bare-board gap leads from the input out of the guard.
+    V1, V2 = (xy("R6", "2")[0], 41.90), (13.70, 37.00)
+    hand("/TIA_OUT", pcbnew.F_Cu, [xy("R6", "2"), V1])
+    hand("/TIA_OUT", pcbnew.F_Cu, [xy("C2", "2"), V1])
+    hand("/TIA_OUT", pcbnew.B_Cu, [V1, (V1[0], 37.76), V2])
+    hand("/TIA_OUT", pcbnew.F_Cu, [V2, (13.00, xy("U3", "4")[1]), xy("U3", "4"), xy("R11", "1")])
+    add_via(V1, "/TIA_OUT", nid["/TIA_OUT"]); add_via(V2, "/TIA_OUT", nid["/TIA_OUT"])
+    # DET_IN (rev E): two straight runs, so the guard pour hugs them (rev D left a pocket at R4)
+    d0, r4 = xy("CR3", "3"), xy("R4", "2")
+    hand("/DET_IN", pcbnew.F_Cu, [d0, (r4[0], d0[1] - (r4[0] - d0[0])), r4])
+    r5 = xy("R5", "1")
+    hand("/DET_IN", pcbnew.F_Cu, [r4, (r4[0] - (r5[1] - r4[1]), r5[1]), r5])
     # COAX_IN: one straight track from R4 to the SMA centre, midway between the SMA's ground pins
     cin = nid["/COAX_IN"]
     ends = [fps[r].FindPadByNumber("1").GetPosition() for r in ("R4", "J5")]
@@ -434,9 +479,8 @@ def main():
     tr.SetStart(P(*a)); tr.SetEnd(P(*b)); tr.SetWidth(MM(gp.TRACK)); tr.SetLayer(pcbnew.F_Cu)
     tr.SetNet(nets["/COAX_IN"]); board.Add(tr); R.add_segment_copper(0, a, b, cin)
     smd_gnd = [p for p in netpads["GND"] if p.GetAttribute() == pcbnew.PAD_ATTRIB_SMD]
-    for pad in smd_gnd:                       # the two op-amps first: tight spots next to the guard
-        if pad.GetParentFootprint().GetReference() in ("U3", "U4"):
-            gnd_stub(pad)
+    for pad in smd_gnd:        # every SMD ground via before the signals (rev E: R9's got boxed in)
+        gnd_stub(pad)
     for name in ROUTE_ORDER:
         if name == "GND":
             continue            # through-hole GND pins: the two ground pours; SMD ones: stubs below
@@ -451,9 +495,6 @@ def main():
             commit(path, name, net)
             tree += path
         print("routed", name, flush=True)
-    for pad in smd_gnd:
-        if pad.GetParentFootprint().GetReference() not in ("U3", "U4"):
-            gnd_stub(pad)
 
     ring = [(-27.54, -2.14), (37.70, -2.14), (37.70, 0.16), (40.24, 2.70), (40.24, 35.14),
             (37.70, 37.68), (37.70, 49.12), (36.42, 50.40), (-27.54, 50.40)]
@@ -476,6 +517,48 @@ def main():
         gp.polygon_zone(board, pts, pcbnew.B_Cu, rule_area=True, name=name)
     board.BuildConnectivity()      # island removal needs this, or it deletes every pour
     pcbnew.ZONE_FILLER(board).Fill(board.Zones())
+    # rev E: no solder mask on the guard (LMP7721 datasheet 10.1).  Opening = guard fill shrunk by
+    # 0.10 mm, and at least 0.50 mm away from any pad and 0.40 mm from any track/via of another net,
+    # so the mask still covers every other track, every gap next to the guard and the edge of the
+    # GND pour: exposed guard copper never faces exposed copper of another net across < 0.4 mm of mask.
+    err = MM(0.005)
+    mask_area = 0.0
+    for z in board.Zones():
+        if z.GetZoneName() not in ("guard top", "guard bottom"):
+            continue
+        L = z.GetLayer(); ML = pcbnew.F_Mask if L == pcbnew.F_Cu else pcbnew.B_Mask
+        SL = pcbnew.F_SilkS if L == pcbnew.F_Cu else pcbnew.B_SilkS
+        opening = z.GetFilledPolysList(L).CloneDropTriangulation()
+        opening.Deflate(MM(0.10), pcbnew.CORNER_STRATEGY_ROUND_ALL_CORNERS, err)
+        keep = pcbnew.SHAPE_POLY_SET()
+        for fp in board.GetFootprints():
+            for pad in fp.Pads():
+                if pad.IsOnLayer(L) and pad.GetNetname() != "/VREF":
+                    pad.TransformShapeToPolygon(keep, L, MM(0.50), err, pcbnew.ERROR_OUTSIDE)
+            for g in fp.GraphicalItems():
+                if g.GetLayer() == L:
+                    g.TransformShapeToPolygon(keep, L, MM(0.50), err, pcbnew.ERROR_OUTSIDE)
+                if g.GetLayer() == SL:
+                    g.TransformShapeToPolygon(keep, SL, MM(0.20), err, pcbnew.ERROR_OUTSIDE)
+            for fld in fp.GetFields():
+                if fld.GetLayer() == SL and fld.IsVisible():
+                    fld.TransformShapeToPolygon(keep, SL, MM(0.20), err, pcbnew.ERROR_OUTSIDE)
+        for d in board.GetDrawings():         # silkscreen stays on mask: never print it on bare copper
+            if d.GetLayer() == SL:
+                d.TransformShapeToPolygon(keep, SL, MM(0.20), err, pcbnew.ERROR_OUTSIDE)
+        for t in board.GetTracks():
+            if t.IsOnLayer(L) and t.GetNetname() != "/VREF":
+                t.TransformShapeToPolygon(keep, L, MM(0.40), err, pcbnew.ERROR_OUTSIDE)
+        opening.BooleanSubtract(keep)
+        opening.Deflate(MM(0.10), pcbnew.CORNER_STRATEGY_ROUND_ALL_CORNERS, err)    # drop slivers
+        opening.Inflate(MM(0.10), pcbnew.CORNER_STRATEGY_ROUND_ALL_CORNERS, err)
+        opening.Fracture()
+        for k in range(opening.OutlineCount()):
+            one = pcbnew.SHAPE_POLY_SET(); one.AddOutline(opening.Outline(k))
+            sh = pcbnew.PCB_SHAPE(board); sh.SetShape(pcbnew.SHAPE_T_POLY)
+            sh.SetPolyShape(one); sh.SetFilled(True); sh.SetWidth(0); sh.SetLayer(ML); board.Add(sh)
+        mask_area += opening.Area() / 1e12
+    print("guard mask openings: %.1f mm2" % mask_area)
     board.Save(OUT)
     print("wrote", OUT, "tracks+vias", len(board.GetTracks()))
     if failures:

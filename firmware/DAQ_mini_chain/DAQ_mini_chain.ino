@@ -1,5 +1,10 @@
 // DAQ "mini system" on a breadboard: DAC -> Arduino -> PWM -> ADC
 //
+// !! BREADBOARD WIRING ONLY.  Do not run this on the DAQ shield (hardware/mie1001_daq_simple):
+// !! on the shield, ADS1115 A1 is PRE_OUT (the Faraday-cup preamp output), A2 is the QPS_OUT
+// !! read-back (JP1) and A3 is VREF, and nothing connects D9 or the UNO's A0.  For the shield use
+// !! DAQ_loopback_test (bring-up) or DAQ_shield_scan (measurements).
+//
 //   MCP4725 DAC sets a voltage (the "command")
 //     -> UNO A0 reads it (the UNO's own ADC)
 //     -> UNO makes a PWM on D9 with the same duty (V / 5 V)

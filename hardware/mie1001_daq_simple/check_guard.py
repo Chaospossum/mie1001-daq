@@ -8,14 +8,25 @@ For every sensitive pad/track it reports
      parallel with the feedback resistor (TIA_OUT);
   2. whether VREF guard copper (pour or pad) is present within 0.6 mm on that layer, i.e.
      whether the guard actually hugs it.
-Exit status 1 if any unexpected item is closer than 1.0 mm.  Expected exceptions are
-listed in ALLOWED with the reason.
+  3. (rev E) a bare-board flood fill: on each copper layer, starting from the copper of the input
+     nets, spread through every point of the board that carries no copper.  Guard copper (VREF) is
+     a wall; so are TIA_OUT and TIA_REF, which belong to the amplifier itself (leakage into them
+     only adds in parallel with the feedback resistor or goes to VREF through R7, LMP7721
+     datasheet 10.1).  Touching copper of ANY other net, or leaving the window around the guard,
+     means there is a surface-leakage path from the input that does not cross the guard: FAIL.
+     This is the check that rev D failed (a gap under U3 along TIA_OUT led to GND and +5V).
+Exit status 1 if any unexpected item is closer than 1.0 mm, if any sensitive item has no guard
+copper within 0.6 mm, or if the flood fill reaches another net.  Expected exceptions are listed
+in ALLOWED with the reason.
+Usage: check_guard.py [board.kicad_pcb]   (default: the project board)
 """
 import sys
+from collections import Counter
 
+import numpy as np
 import pcbnew
 
-b = pcbnew.LoadBoard("mie1001_daq_simple.kicad_pcb")
+b = pcbnew.LoadBoard(sys.argv[1] if len(sys.argv) > 1 else "mie1001_daq_simple.kicad_pcb")
 SENS = {"/COAX_IN", "/DET_IN", "/TIA_IN", "/TIA_REF"}
 FEEDBACK = {"/TIA_OUT"}
 GUARD = "/VREF"
@@ -103,8 +114,98 @@ for s in sens:
         if not guard_near and s.GetClass() != "ZONE":
             unguarded.append(f"{pcbnew.LayerName(lyr)} {s.GetNetname()} {name(s)}")
 if unguarded:
-    print("\nno VREF guard copper within 0.6 mm (check these by eye):")
+    print("\nFAIL: no VREF guard copper within 0.6 mm of:")
     for u in unguarded:
         print("  ", u)
-print(f"\nguard check: {len(sens)} sensitive items, {bad} unexpected neighbours closer than 1.0 mm")
-sys.exit(1 if bad else 0)
+print(f"\nproximity: {len(sens)} sensitive items, {bad} unexpected neighbours closer than 1.0 mm, "
+      f"{len(unguarded)} without guard within 0.6 mm")
+
+# ------------------------------------------------------------------ 3. bare-board flood fill
+FLOOD_START = {"/COAX_IN", "/DET_IN", "/TIA_IN", "/TIA_REF"}
+FLOOD_OK = {GUARD, "/TIA_OUT"}          # walls that are allowed to be touched
+RES = 0.04                              # mm per cell; the narrowest gap on the board is 0.30 mm
+gz = [z for z in b.Zones() if not z.GetIsRuleArea() and z.GetNetname() == GUARD]
+bb = gz[0].GetBoundingBox()
+for z in gz[1:]:
+    bb.Merge(z.GetBoundingBox())
+X0, X1 = pcbnew.ToMM(bb.GetX()) - 3, pcbnew.ToMM(bb.GetRight()) + 3
+Y0, Y1 = pcbnew.ToMM(bb.GetY()) - 3, pcbnew.ToMM(bb.GetBottom()) + 3
+nx, ny = int((X1 - X0) / RES), int((Y1 - Y0) / RES)
+XX, YY = np.meshgrid(X0 + RES * (np.arange(nx) + .5), Y0 + RES * (np.arange(ny) + .5))
+
+
+def pip(poly):
+    ins = np.zeros(XX.shape, bool)
+    mn, mx = poly.min(0), poly.max(0)
+    m = (XX >= mn[0]) & (XX <= mx[0]) & (YY >= mn[1]) & (YY <= mx[1])
+    if not m.any():
+        return ins
+    xi, yi = XX[m], YY[m]
+    r = np.zeros(xi.shape, bool)
+    j = len(poly) - 1
+    for i in range(len(poly)):
+        (xa, ya), (xb, yb) = poly[i], poly[j]
+        r ^= ((ya > yi) != (yb > yi)) & (xi < (xb - xa) * (yi - ya) / ((yb - ya) if yb != ya else 1e-12) + xa)
+        j = i
+    ins[m] = r
+    return ins
+
+
+def painted(sps):
+    m = np.zeros(XX.shape, bool)
+    for k in range(sps.OutlineCount()):
+        for o in [sps.Outline(k)] + [sps.Hole(k, h) for h in range(sps.HoleCount(k))]:
+            m ^= pip(np.array([[pcbnew.ToMM(o.CPoint(i).x), pcbnew.ToMM(o.CPoint(i).y)]
+                               for i in range(o.PointCount())]))
+    return m
+
+
+leaks = 0
+edge = pcbnew.SHAPE_POLY_SET()
+b.GetBoardPolygonOutlines(edge, False)
+onboard = painted(edge)
+for L in LAYERS:
+    lab = np.zeros(XX.shape, np.int32)
+    names = {}
+    def paint(net, sps):
+        lab[painted(sps)] = names.setdefault(net or "<no net>", len(names) + 1)
+    for z in b.Zones():
+        if not z.GetIsRuleArea() and z.IsOnLayer(L):
+            paint(z.GetNetname(), z.GetFilledPolysList(L))
+    for it in [t for t in b.GetTracks() if t.IsOnLayer(L)] + \
+              [p for f in b.GetFootprints() for p in f.Pads() if p.IsOnLayer(L)] + \
+              [g for f in b.GetFootprints() for g in f.GraphicalItems() if g.GetLayer() == L]:
+        s = pcbnew.SHAPE_POLY_SET()
+        it.TransformShapeToPolygon(s, L, 0, pcbnew.FromMM(0.005), pcbnew.ERROR_INSIDE)
+        paint(it.GetNetname() if hasattr(it, "GetNetname") else "", s)
+    inv = {v: k for k, v in names.items()}
+    start = np.isin(lab, [names[n] for n in FLOOD_START if n in names])
+    free = (lab == 0) & onboard
+    reach = start.copy()
+    while True:                                   # 4-connected flood through bare board
+        g = reach.copy()
+        g[1:] |= reach[:-1]; g[:-1] |= reach[1:]; g[:, 1:] |= reach[:, :-1]; g[:, :-1] |= reach[:, 1:]
+        g &= free | start
+        if (g == reach).all():
+            break
+        reach = g
+    ring = reach.copy()
+    ring[1:] |= reach[:-1]; ring[:-1] |= reach[1:]; ring[:, 1:] |= reach[:, :-1]; ring[:, :-1] |= reach[:, 1:]
+    touched = Counter(inv[v] for v in lab[ring & ~reach & (lab > 0)])
+    esc = reach[0].any() or reach[-1].any() or reach[:, 0].any() or reach[:, -1].any()
+    foreign = {n: c for n, c in touched.items() if n not in FLOOD_OK and n not in FLOOD_START}
+    for n in foreign:
+        i, j = np.argwhere(ring & ~reach & (lab == names[n]))[0]
+        print(f"FAIL {pcbnew.LayerName(L)}: bare board from the input reaches {n} "
+              f"(near {XX[i, j] - 100:.2f}, {100 - YY[i, j]:.2f})")
+    if esc:
+        print(f"FAIL {pcbnew.LayerName(L)}: bare board from the input leaves the guard window")
+    leaks += len(foreign) + bool(esc)
+    print(f"flood {pcbnew.LayerName(L)}: input region touches " +
+          ", ".join(f"{n} ({c * RES:.1f} mm of edge)" for n, c in sorted(touched.items())) +
+          ("" if foreign or esc else "  -> enclosed"))
+
+fail = bad + len(unguarded) + leaks
+print(f"\nguard check: {'PASS' if not fail else 'FAIL'}  ({bad} close neighbours, "
+      f"{len(unguarded)} unguarded items, {leaks} leakage paths)")
+sys.exit(1 if fail else 0)
